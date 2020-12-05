@@ -5,6 +5,8 @@ date: "5/12/2020"
 output: html_document
 bibliography: proyecto2_brucella.bib
 ---
+URL repositorio en github: https://github.com/AndreaLRM/project2_BrucellaPMN
+
 &nbsp;
 
 #### **1. La pregunta de investigación**
@@ -271,6 +273,7 @@ m3.1graph #se imprime el gráfico
 De acuerdo con los análisis, se puede interpretar que (1) los datos por tener un tamaño de muestra muy pequeño se ven sujetos a que valores atípicos y una gran dispersión entre ellos afecten la correcta intepretación de los resultados o que no se obtenga una aproximación real del fenómeno. (2) De acuerdo con los modelos de distribución cuasi Poisson, sí existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `CFUb` dependiendo del tiempo de infección (p < 0.05). El gráfico `m1.1graph` puede evidenciarse un mayor recuento de `CFUb` en el tratamiento sin PMNs a los 15 días post-infección en comparación con los 30 días. En el caso del tratamiento con PMNs, el recuento bacteriano en bazo se mantiene muy similar en los dos tiempos de infección. Por otro lado, no existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `CFUm` en relación al tiempo de infección (p > 0.05). Asimismo, no existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `Hemo` en relación al tiempo de infección (p > 0.05). Sin embargo, en el gráfico `m3.1graph` se evidencia un aumento en la concentración de leucocitos en el tratamiento sin PMNs a los 30 días post-infección en comparación con los 15 días de infección. No obstante, la mediana de los tratamientos con PMNs es muy similar en ambos tiempos de infección. Por lo tanto, se sugiere que el efecto del inóculo de *B. abortus* con PMNs sobre el grado de infección en bazo y médula ósea es más constante y baja en comparación con el inóculo sin PMNs. Sin embargo, existe una respuesta inmune más alta, reflejado en la concentración de leucocitos, en comparación con el tratamiento sin PMNs.
 
 &nbsp;
+
 
 #### **6. Referencias bibliográficas**
 
