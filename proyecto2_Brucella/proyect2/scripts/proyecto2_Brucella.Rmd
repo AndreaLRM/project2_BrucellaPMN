@@ -1,0 +1,286 @@
+---
+title: "Proyecto 2: El efecto de los neutrófilos en la infección con Brucella"
+author: "Andrea Romero Magaña"
+date: "5/12/2020"
+output: html_document
+bibliography: proyecto2_brucella.bib
+---
+&nbsp;
+
+#### **1. La pregunta de investigación**
+
+La brucelosis es una enfermedad zoonótica de distribución mundial con implicaciones económicas importantes en animales de producción. El agente causal es *Brucella*, un género de bacterias Gram negativas **intracelulares** que afecta a una variedad de mamíferos, incluyendo al ser humano [@dworkin_prokaryotes_2006]. 
+
+En gran medida, la patogenicidad y virulencia de esta bacteria dependen de su capacidad de invadir, sobrevivir y multiplicarse dentro de compartimentos intracelulares de células fagocíticas como macrófagos (MØs) y células dendríticas (CD), así como en células no fagocíticas del hospedero (i.e. fibroblastos y células epiteliales) [@roop_survival_2009]. Consecuente con esto, la mayoría de estudios que existen sobre el ciclo de vida intracelular de *Brucella* se centran en MØs, CD y células epiteliales, pero no en neutrófilos (PMN). Muy probablemente esto se deba al hecho de que las brucelas no se replican intracelularmente en PMNs, sumado a que la mayoría de estudios sobre infección con brucelosis se enfocan en las células del sistema inmune adaptativo en lugar de los PMNs, cuya participación ocurre en las etapas más tempranas de la infección [@moreno_role_2020].
+
+Sorprendentemente, se ha demostrado que los organismos de *Brucella* son naturalmente **resistentes** a la acción destructora de los PMNs y que, junto con los MØs y CD, los PMNs son las primeras células en encontrar e internalizar organismos de *Brucella* después de que invaden la mucosa del hospedero. Todos estos fenómenos coinciden con reportes de (1) baja respuesta proinflamatoria en los primeros momentos de la infección, (2) ausencia de síntomas endotóxicos y (3) la ausencia de coagulopatías en pacientes y animales con brucelosis [@moreno_role_2020].
+
+Por lo tanto, para brindar un mayor conocimiento sobre el rol que desempeñan los PMNs en el curso de infección con *Brucella*, se quiere conocer el efecto que tiene un inóculo de *B. abortus* con PMNs sobre el número de bacterias en bazo (CFUb), médula ósea (CFUm) y el hemograma de ratones cepa CD-1, a los 15 y 30 días post-infección. 
+
+&nbsp;
+
+#### **2. Estableciendo la relación causal**
+
+Para conocer el efecto de los PMNs en una infección con *B. abortus*, se realizaron dos experimentos que permitieron evaluar el grado de infección y la respuesta inmune generada en un modelo murino dado el tipo de inóculo que recibieron:
+
+(1) El primer grupo de ratones se les administró un inóculo con *B. abortus* **sin PMNs** y se evaluó la cantidad de unidades formadoras de colonia (CFU por sus siglas en inglés) en bazo y médula ósea, así como la cantidad de leucocitos en sangre, a los 15 y 30 post-infección.
+
+(2) El segundo grupo de ratones se les administró un inóculo con *B. abortus* **más PMNs** y se evaluó las CFUs en bazo y médula ósea, así como la cantidad de leucocitos en sangre, a los 15 y 30 post-infección.
+
+A partir de lo anterior, se definieron las siguientes variables:
+
+1. `Tr`: representa la variable predictora, es decir, el tipo de tratamiento (inóculo de *B. abortus* con (0) o sin PMNs(1)) que se le administró a cada grupo de ratones.
+
+2. `Hemo`: representa las mediciones del hemograma. Para efectos de este proyecto, se utilizó únicamente la concentración de leucocitos en sangre.
+
+3. `CFUb`: representa el conteo del número de bacterias *B. abortus* en bazo.
+
+4. `CFUm`: representa el conteo del número de bacterias *B. abortus* en médula ósea.
+
+5. `Tiempo`: representa los dos tiempos en que se realizaron las mediciones: a los 15 días (1) y a los 30 días (2) post-infección.
+
+En un contexto **biológico**, lo que ocurre en el experimento es que al momento de inocular las bacterias con o sin neutrófilos, éstas empiezan a invadir y multiplicarse dentro de las células de ratón. Mientras la infección avanza, las bacterias invaden otros órganos diana como la médula ósea y el bazo. Esto se refleja en el conteo de CFUs de ambos órganos. También, se genera una respuesta inmune ante la infección, por lo que se espera un aumento de leucocitos, linfocitos, monocitos, etc. (valores del hemograma). Dichas mediciones se realizan en dos tiempos, a los 15 días y 30 días post-infección, donde se esperaría que a los 30 días los valores de CFUs y del hemograma sean mayores porque habrá un tiempo más prolongado de infección.
+
+Por lo tanto, existen cuatro vías por las que se ve afectado la variable `Hemo`: el tipo de tratamiento, las CFUs en médula y bazo (a mayor cantidad de bacterias, mayor es la infección, por lo tanto, mayor es la respuesta inmune), y también el tiempo en que se realizan las mediciones. En constraste, las variables `CFUm` y `CFUb` son afectadas directamente por el tipo de tratamiento que reciben los ratones, así como por el tiempo transcurrido de la infección. 
+
+Dicho lo anterior, se instalaron los paquetes `daggity` para crear un grafo acíclico dirigido (DAG por sus siglas en inglés) donde se conecten las variables dado el experimento, y también el paquete `ggdag` para graficar el DAG:
+
+```{r, eval=FALSE, echo= TRUE, include=TRUE}
+
+#se instalan los paquetes
+
+#install_github("jtextor/dagitty/r")
+require(dagitty)
+
+#install.packages("ggdag")
+require(ggdag)
+```
+
+```{r, message=FALSE}
+#se cargan las librerías
+library(dagitty) #crea el DAG
+library(ggdag) #grafica el DAG
+
+```
+
+```{r, echo=TRUE}
+#se crea el DAG  
+infection <- dagify(Hemo ~ Tr, #se lee como: Hemo se ve afectado por Tr
+                  Hemo ~ Tiempo,
+                  Hemo ~ CFUb,
+                  Hemo ~ CFUm,
+                  CFUb ~ Tr,
+                  CFUb ~ Tiempo,
+                  CFUm ~ Tiempo,
+                  CFUm ~ Tr,
+                  exposure = "Tr", #variable predictora
+                  outcome = "Hemo") #variable respuesta
+#se compacta 
+tidy_dagitty(infection)
+
+#se grafica el DAG
+ggdag(infection, layout = "circle") + theme_dag()
+```
+
+Mediante este DAG, se quieren contestar las siguientes preguntas:
+
+1. ¿Cuál es el efecto directo de `Tr` sobre los valores de `Hemo` dependiendo del tiempo de infección (`Tiempo`)?
+2. ¿Cuál es el efecto directo de `Tr` sobre la cantidad de `CFUb` dependiendo del tiempo de infección (`Tiempo`)?
+3. ¿Cuál es el efecto directo de `Tr` sobre la cantidad de `CFUm` dependiendo del tiempo de infección (`Tiempo`)?
+
+Para responder estas preguntas, es necesario saber cuáles variables se deben **controlar** para conocer el efecto directo de `Tr` sobre las variables respuestas:
+
+```{r}
+#se usa la función 'adjustmentsSets' para enumerar las covariables y se especifica el tipo de efecto que se desea obtener (directo o total) con el argumento 'effect'
+adjustmentSets(x = infection, exposure = "Tr", outcome = "Hemo", type="minimal", effect = "direct")
+
+adjustmentSets(x = infection, exposure = "Tr", outcome = "CFUm", type="minimal", effect = "direct")
+
+adjustmentSets(x = infection, exposure = "Tr", outcome = "CFUb", type="minimal", effect = "direct")
+```
+
+De acuerdo con este análisis, para determinar el efecto directo de `Tr` sobre `Hemo` se deben controlar en el modelo estadístico las variables `CFUb`, `CFUm` y `Tiempo`, incluyendo la interacción de `Tr` con el `Tiempo`. Para las variables `CFUb` y `CFUm` no es necesario controlar variables, pero sí debe incluirse la interacción `Tr` y `Tiempo` para contestar las preguntas antes planteadas.
+
+&nbsp;
+
+#### **3. Procesamiento de los datos**
+
+Antes del análisis de los datos, primero se establece el directorio de trabajo y se lee el archivo de datos crudos con formato csv y se guarda en un objeto:
+```{r}
+#se define el directorio de trabajo
+setwd("C:/Users/andrearomero/Documents/Andrea - Img, doc, etc/2020/CICLO II-2020/Herramientas prácticas para investigación reproducible/proyecto2/project2_BrucellaPMN/proyecto2_Brucella/proyect2/data/raw")
+
+#R lee el set de datos con la función 'read.csv' y se guarda en un objeto
+infection_data <- read.csv("rawdataset.csv", sep = ";")
+
+#verificar que R haya leído y guardado correctamente los datos
+View(infection_data)
+
+#cambiar el nombre de la primera columna (T) por Tiempo
+colnames(infection_data)[1] <- "Tiempo" 
+
+```
+
+Se modifican las variables `Tr` y `Tiempo`para que sean categóricas:
+```{r}
+infection_data$Tiempo <- as.factor(infection_data$Tiempo) #la función as.factor cambia una variable numérica a una categórica
+infection_data$Tr <- as.factor(infection_data$Tr) 
+```
+
+&nbsp;
+
+#### **4. Análisis de los datos**
+
+Se instalan y cargan las librerías correspondientes a los análisis:
+
+```{r, message=FALSE}
+#se cargan librerías
+library(ggplot2) #para crear los boxplots
+library(dplyr) #para prueba de normalidad y crear modelos de regresión lineal y modelos lineales generalizados
+library(tidyverse) #para prueba de homogeneidad de varianzas
+library(car) #para utilizar la función Anova
+library(ggfortify)
+```
+
+&nbsp;
+
+##### - Análisis exploratorio
+
+Posteriormente, se hizo una exploración de los datos para visualizar diferencias en las variables respuestas con respecto al tipo de tratamiento, así como datos atípicos.
+
+```{r}
+#boxplot para la variable Hemo
+ggplot(infection_data, aes(Tr, Hemo)) + geom_boxplot()
+
+#boxplot para la variable CFUb
+ggplot(infection_data, aes(Tr, CFUb)) + geom_boxplot()
+
+#boxplot para la variable CFUm
+ggplot(infection_data, aes(Tr, CFUm)) + geom_boxplot()
+```
+
+&nbsp;
+
+##### - Evaluación de supuestos
+
+Después de examinar los datos, se consideró utilizar un modelo lineal generalizado, específicamente una distribución de Poisson, ya que se quiere evaluar el efecto de `Tr` sobre las variables respuesta `CFUb` y `CFUm` en diferentes tiempos. Además, los datos son conteos de bacterias (variable discreta). En cambio, para la variable respuesta `Hemo` se consideró utilizar un modelo de regresión lineal por la naturaleza de los datos.
+
+Se evaluaron los supuestos para ambos modelos:
+
+**1. Normalidad.**
+
+Se utilizó la prueba de Shapiro-Wilk para determinar si los datos presentan una distribución normal. Si p es mayor a 0.05, se asume normalidad.
+
+```{r}
+#se realiza la prueba de normalidad para una variable 
+shapiro.test(infection_data$Hemo) #p < 0.05
+shapiro.test(infection_data$CFUb) #p < 0.05
+shapiro.test(infection_data$CFUm) #p < 0.05
+```
+
+&nbsp;
+
+**2. Homogeneidad de varianzas**
+
+Se escogió la prueba Fligner-Killeen, ya que verifica la homogeneidad de varianzas cuando los datos no están distribuidos normalmente o cuando los problemas relacionados con valores atípicos en el conjunto de datos no se pueden resolver.
+
+```{r}
+#la sintaxis para la función 'fligner.test' corresponde a (respuesta ~ predictora, datos)
+fligner.test(Hemo ~ Tr, data = infection_data) #p < 0.05, no se cumple homocedasticidad
+fligner.test(CFUb ~ Tr, data = infection_data) #p > 0.05, se cumple homocedasticidad
+fligner.test(CFUm ~ Tr, data = infection_data) #p > 0.05, se cumple homocedasticidad
+```
+
+&nbsp;
+
+**3. Análisis de residuales**
+
+Otro supuesto para validar los modelos lineales es realizar un ánalisis de residuales, donde se grafique los residuales en función de los valores ajustados por el modelo (i.e. Residuals vs. Fitted). Si el modelo es correcto, el patrón de residuos sería al azar, es decir, que no haya sesgos o tendencias en los residuos ni una dispersión (varianza) no constante ni valores atípicos que desvíen el patrón observado.
+
+```{r}
+#se utiliza la función lm para regresiones lineales para la variable Hemo (unidades de concentración)
+m1 = lm(Hemo ~ Tr * Tiempo + CFUb + CFUm, data = infection_data)
+
+#se grafica Residuales vs Fitted
+plot(m1, 1)
+
+#se utiliza la función glm (modelo lineal generalizado) y se especifica en el modelo el tipo de distribución con el argumento 'familiy'
+m2 <- glm(CFUb ~ Tr * Tiempo, family= "poisson", data = infection_data)
+#se grafica Residuales vs Fitted
+plot(m2, 1)
+
+#se utiliza la función glm (modelo lineal generalizado) y se especifica en el modelo el tipo de distribución con el argumento 'familiy'
+m3 <- glm(CFUm ~ Tr * Tiempo, family = "poisson", data = infection_data)
+#se grafica Residuales vs Fitted
+plot(m3, 1)
+```
+
+&nbsp;
+
+##### - Modelo cuasi Poisson 
+
+Debido a que no se cumplieron los supuestos para cada modelo en particular, se decidió realizar un modelo de distribución cuasi Poisson, el cual permite lidiar con la sobre dispersión de los datos y valores atípicos: 
+
+- Modelo cuasi Poisson para la variable `CFUb`:
+```{r}
+#se utiliza la función 'glm' y se especifica el tipo de distribución para la variable CFUb con el argumento 'family'
+m1.1 <- glm(CFUb ~  Tr * Tiempo, family = "quasipoisson", data = infection_data)
+summary(m1.1) #compara con el intercepto
+Anova(m1.1) #explica si hay un efecto general del tratamiento sobre CFUb dependiendo del tiempo
+```
+
+Luego, se visualizó la relación de las variables `Tiempo`, `CFUb` y `Tr` en un boxplot:
+```{r}
+
+m1.1graph <- ggplot(data=infection_data, aes(x= Tiempo, y = CFUb, colour= Tr)) + geom_boxplot() #dentro del argumento 'aes' se define la variable respuesta CFUb 
+m1.1graph #se imprime el gráfico
+```
+
+- Modelo con distribución cuasi Poisson para la variable `CFUm`:
+```{r}
+#se utiliza la función 'glm' y se especifica el tipo de distribución para la variable CFUm con el argumento 'family'
+m2.1 <- glm(CFUm ~  Tr * Tiempo, family = "quasipoisson", data = infection_data)
+summary(m2.1) #compara con el intercepto
+Anova(m2.1) #explica si hay un efecto general del tratamiento sobre CFUm dependiendo del tiempo
+```
+
+Luego, se visualizó la relación de las variables `Tiempo`, `CFUm` y `Tr` en un boxplot:
+```{r}
+m2.1graph <- ggplot(data=infection_data, aes(x= Tiempo, y = CFUm, colour= Tr)) + geom_boxplot() #dentro del argumento 'aes' se define la variable respuesta CFUm
+m2.1graph #se imprime el gráfico
+```
+
+- Modelo con distribución cuasi Poisson para la variable `Hemo`:
+```{r}
+#se utiliza la función 'glm' y se especifica el tipo de distribución para la variable Hemo con el argumento 'family
+m3.1 <- glm(Hemo ~ Tr * Tiempo + CFUm + CFUb, family = "quasipoisson", data = infection_data)
+summary(m3.1) #compara con el intercepto
+Anova(m3.1) #explica si hay un efecto general del tratamiento sobre hemo dependiendo del tiempo
+```
+
+Luego, se visualizó la relación de las variables `Tiempo`, `Hemo` y `Tr` en un boxplot:
+```{r}
+m3.1graph <- ggplot(data=infection_data, aes(x= Tiempo, y = Hemo, colour= Tr)) + geom_boxplot() #dentro del argumento 'aes' se define la variable respuesta Hemo
+m3.1graph #se imprime el gráfico
+```
+
+&nbsp;
+
+#### **5. Interpretación**
+
+De acuerdo con los análisis, se puede interpretar que (1) los datos por tener un tamaño de muestra muy pequeño se ven sujetos a que valores atípicos y una gran dispersión entre ellos afecten la correcta intepretación de los resultados o que no se obtenga una aproximación real del fenómeno. (2) De acuerdo con los modelos de distribución cuasi Poisson, sí existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `CFUb` dependiendo del tiempo de infección (p < 0.05). El gráfico `m1.1graph` puede evidenciarse un mayor recuento de `CFUb` en el tratamiento sin PMNs a los 15 días post-infección en comparación con los 30 días. En el caso del tratamiento con PMNs, el recuento bacteriano en bazo se mantiene muy similar en los dos tiempos de infección. Por otro lado, no existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `CFUm` en relación al tiempo de infección (p > 0.05). Asimismo, no existe un efecto significativo del tratamiento (`Tr`) sobre los valores de `Hemo` en relación al tiempo de infección (p > 0.05). Sin embargo, en el gráfico `m3.1graph` se evidencia un aumento en la concentración de leucocitos en el tratamiento sin PMNs a los 30 días post-infección en comparación con los 15 días de infección. No obstante, la mediana de los tratamientos con PMNs es muy similar en ambos tiempos de infección. Por lo tanto, se sugiere que el efecto del inóculo de *B. abortus* con PMNs sobre el grado de infección en bazo y médula ósea es más constante y baja en comparación con el inóculo sin PMNs. Sin embargo, existe una respuesta inmune más alta, reflejado en la concentración de leucocitos, en comparación con el tratamiento sin PMNs.
+
+&nbsp;
+
+#### **6. Referencias bibliográficas**
+
+
+<!-- #### *Información de la sesión* -->
+```{r, echo=FALSE, include=FALSE}
+sessionInfo()
+```
+
+
+
+
+
